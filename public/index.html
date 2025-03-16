@@ -3,7 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat assistent Configuratie</title>
+    <title>Chat Assistent Configuratie</title>
+    <script type="module">
+        import { getBots, addBot, deleteBot } from './supabase.js';
+
+        // Functie om de botlijst bij te werken
+        async function updateBotList() {
+            const botList = document.getElementById('botList');
+            const bots = await getBots();
+            
+            if (!bots || bots.length === 0) {
+                botList.innerHTML = '<div class="empty-state">Nog geen bots geconfigureerd</div>';
+                return;
+            }
+
+            botList.innerHTML = bots.map((bot) => `
+                <div class="bot-item">
+                    <div class="bot-info">
+                        <div class="bot-name">${bot.name}</div>
+                        <div class="bot-id">${bot.webhook_id}</div>
+                    </div>
+                    <div class="bot-actions">
+                        <button class="start-chat" onclick="window.startChat('${bot.webhook_id}', '${bot.name}')">Start Chat</button>
+                        <button class="remove-bot" onclick="window.removeBot('${bot.id}')">Verwijder</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Functie om een nieuwe bot toe te voegen
+        async function handleAddBot() {
+            const nameInput = document.getElementById('botName');
+            const webhookInput = document.getElementById('webhookId');
+            const name = nameInput.value.trim();
+            const webhookId = webhookInput.value.trim();
+
+            if (!name || !webhookId) {
+                alert('Vul alle velden in');
+                return;
+            }
+
+            const bot = await addBot(name, webhookId);
+            if (bot) {
+                nameInput.value = '';
+                webhookInput.value = '';
+                await updateBotList();
+            }
+        }
+
+        // Functie om een bot te verwijderen
+        async function handleRemoveBot(id) {
+            if (confirm('Weet je zeker dat je deze bot wilt verwijderen?')) {
+                const success = await deleteBot(id);
+                if (success) {
+                    await updateBotList();
+                }
+            }
+        }
+
+        // Functie om chat te starten
+        function handleStartChat(webhookId, botName) {
+            localStorage.setItem('currentWebhookId', webhookId);
+            localStorage.setItem('currentBotName', botName);
+            window.location.href = '/chat.html';
+        }
+
+        // Exporteer functies naar window object voor onclick handlers
+        window.addNewBot = handleAddBot;
+        window.removeBot = handleRemoveBot;
+        window.startChat = handleStartChat;
+
+        // Update botlijst bij laden van de pagina
+        document.addEventListener('DOMContentLoaded', updateBotList);
+    </script>
     <style>
         * {
             margin: 0;
@@ -118,15 +190,10 @@
             font-size: 1em;
         }
 
-        .add-bot {
-            background: #28a745;
-            color: white;
-            width: 100%;
-            padding: 10px;
-        }
-
-        .add-bot:hover {
-            background: #218838;
+        .empty-state {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
         }
 
         .error {
@@ -153,102 +220,8 @@
                 <label for="webhookId">Webhook ID</label>
                 <input type="text" id="webhookId" placeholder="Voer de webhook ID in">
             </div>
-            <button class="add-bot" onclick="addBot()">Bot Toevoegen</button>
+            <button class="start-chat" onclick="addNewBot()">Bot Toevoegen</button>
         </div>
     </div>
-
-    <script>
-        // Functie om bots op te halen uit localStorage
-        function getBots() {
-            const bots = localStorage.getItem('bots');
-            return bots ? JSON.parse(bots) : [];
-        }
-
-        // Functie om bots op te slaan in localStorage
-        function saveBots(bots) {
-            localStorage.setItem('bots', JSON.stringify(bots));
-        }
-
-        // Functie om de botlijst bij te werken
-        function updateBotList() {
-            const botList = document.getElementById('botList');
-            const bots = getBots();
-            
-            botList.innerHTML = bots.map((bot, index) => `
-                <div class="bot-item">
-                    <div class="bot-info">
-                        <div class="bot-name">${bot.name}</div>
-                        <div class="bot-id">${bot.webhookId}</div>
-                    </div>
-                    <div class="bot-actions">
-                        <button class="start-chat" onclick="startChat(${index})">Start Chat</button>
-                        <button class="remove-bot" onclick="removeBot(${index})">Verwijder</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // Functie om de webhook ID te extraheren uit de URL of pure ID
-        function extractWebhookId(input) {
-            if (!input) return null;
-            // Als het een URL is, haal dan de laatste deel van de URL
-            if (input.includes('webhook.botpress.cloud')) {
-                return input.split('/').pop();
-            }
-            return input;
-        }
-
-        // Functie om een nieuwe bot toe te voegen
-        function addBot() {
-            const nameInput = document.getElementById('botName');
-            const webhookInput = document.getElementById('webhookId');
-            
-            const name = nameInput.value.trim();
-            const rawWebhookId = webhookInput.value.trim();
-            const webhookId = extractWebhookId(rawWebhookId);
-            
-            if (!name || !webhookId) {
-                alert('Vul alle velden in');
-                return;
-            }
-            
-            const bots = getBots();
-            if (bots.some(bot => bot.webhookId === webhookId)) {
-                alert('Deze webhook ID bestaat al');
-                return;
-            }
-            
-            bots.push({ name, webhookId });
-            saveBots(bots);
-            updateBotList();
-            
-            // Reset form
-            nameInput.value = '';
-            webhookInput.value = '';
-        }
-
-        // Functie om een bot te verwijderen
-        function removeBot(index) {
-            const bots = getBots();
-            bots.splice(index, 1);
-            saveBots(bots);
-            updateBotList();
-        }
-
-        // Functie om de chat te starten
-        function startChat(index) {
-            const bots = getBots();
-            const bot = bots[index];
-            
-            // Sla de webhook ID en bot naam op in localStorage
-            localStorage.setItem('currentWebhookId', bot.webhookId);
-            localStorage.setItem('currentBotName', bot.name);
-            // Navigeer naar de chat pagina
-            window.location.href = '/chat.html';
-        }
-
-        // Initialize de botlijst bij het laden van de pagina
-        document.addEventListener('DOMContentLoaded', updateBotList);
-    </script>
 </body>
 </html> 
