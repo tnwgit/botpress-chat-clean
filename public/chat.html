@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat met Assistent</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -22,16 +23,44 @@
             background: #f5f5f5;
             display: flex;
             flex-direction: column;
+            padding: 20px;
+        }
+
+        .back-to-admin {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            color: #6c757d;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+
+        .back-to-admin:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transform: translateY(-1px);
+        }
+
+        .back-to-admin svg {
+            width: 16px;
+            height: 16px;
         }
 
         .chat-container {
             max-width: 800px;
             width: 100%;
             margin: 0 auto;
-            padding: 20px;
             display: flex;
             flex-direction: column;
-            height: 100vh;
+            height: calc(100vh - 40px);
         }
 
         .chat-header {
@@ -40,6 +69,38 @@
             border-radius: 8px 8px 0 0;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .reset-button, .back-button {
+            background: none;
+            border: none;
+            padding: 5px;
+            cursor: pointer;
+            color: #6c757d;
+            font-size: 0.9em;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+            display: flex;
+            align-items: center;
+        }
+
+        .reset-button:hover, .back-button:hover {
+            opacity: 1;
+            background: none;
+        }
+
+        .reset-button svg, .back-button svg {
+            width: 16px;
+            height: 16px;
         }
 
         .bot-name {
@@ -80,6 +141,74 @@
             align-self: flex-start;
         }
 
+        .message.bot p {
+            margin: 0;
+        }
+
+        .message.bot p:not(:last-child) {
+            margin-bottom: 8px;
+        }
+
+        .message.bot ul, 
+        .message.bot ol {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+
+        .message.bot code {
+            background: rgba(0, 0, 0, 0.05);
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+
+        .message.bot pre {
+            background: rgba(0, 0, 0, 0.05);
+            padding: 8px;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin: 8px 0;
+        }
+
+        .message.bot pre code {
+            background: none;
+            padding: 0;
+        }
+
+        .message.bot strong {
+            font-weight: 600;
+        }
+
+        .message.bot em {
+            font-style: italic;
+        }
+
+        .message.bot a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .message.bot a:hover {
+            text-decoration: underline;
+        }
+
+        .message.bot table {
+            border-collapse: collapse;
+            margin: 8px 0;
+            width: 100%;
+        }
+
+        .message.bot th,
+        .message.bot td {
+            border: 1px solid #dee2e6;
+            padding: 6px;
+            text-align: left;
+        }
+
+        .message.bot th {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
         .chat-input {
             display: flex;
             gap: 10px;
@@ -92,13 +221,25 @@
         #messageInput {
             flex: 1;
             padding: 10px;
-            border: 1px solid #dee2e6;
+            border: 1px solid #e0e0e0;
             border-radius: 4px;
             font-size: 1em;
             resize: none;
             height: 40px;
             min-height: 40px;
             max-height: 120px;
+            text-indent: 0;
+            text-align: left;
+            transition: border-color 0.2s;
+        }
+
+        #messageInput:focus {
+            outline: none;
+            border-color: #b0b0b0;
+        }
+
+        #messageInput::placeholder {
+            color: #999;
         }
 
         button {
@@ -173,9 +314,24 @@
     </style>
 </head>
 <body>
+    <button class="back-to-admin" onclick="window.location.href='/'" title="Terug naar beheer">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5"/>
+            <path d="M12 19l-7-7 7-7"/>
+        </svg>
+        Beheer
+    </button>
     <div class="chat-container">
         <div class="chat-header">
             <div class="bot-name" id="botName">Laden...</div>
+            <div class="header-actions">
+                <button class="reset-button" onclick="resetChat()" title="Start een nieuw gesprek">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                        <path d="M3 3v5h5"/>
+                    </svg>
+                </button>
+            </div>
         </div>
         
         <div class="chat-messages" id="chatMessages">
@@ -192,8 +348,8 @@
                 id="messageInput" 
                 placeholder="Type je bericht..." 
                 rows="1"
-                onkeydown="if(event.keyCode === 13 && !event.shiftKey) { event.preventDefault(); sendMessage(); }">
-            </textarea>
+                onkeydown="if(event.keyCode === 13 && !event.shiftKey) { event.preventDefault(); sendMessage(); }"
+            ></textarea>
             <button onclick="sendMessage()" id="sendButton">Verstuur</button>
         </div>
     </div>
@@ -201,6 +357,10 @@
     <script>
         let webhookId = localStorage.getItem('currentWebhookId');
         let botName = localStorage.getItem('currentBotName');
+        let userId = localStorage.getItem('userId');
+        let userKey = localStorage.getItem('userKey');
+        let conversationId = localStorage.getItem('conversationId');
+        let lastBotMessageId = null;
 
         if (!webhookId || !botName) {
             window.location.href = '/';
@@ -230,16 +390,166 @@
         function addMessage(text, isUser = false) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
-            messageDiv.textContent = text;
+            
+            if (isUser) {
+                // Gebruikersberichten blijven gewoon tekst
+                messageDiv.textContent = text;
+            } else {
+                // Bot berichten worden geparsed als Markdown
+                messageDiv.innerHTML = marked.parse(text, {
+                    breaks: true, // Sta regelafbreking toe met enkele newline
+                    gfm: true,    // GitHub Flavored Markdown
+                    sanitize: true // Voorkom XSS aanvallen
+                });
+            }
+            
             chatMessages.insertBefore(messageDiv, typingIndicator);
             chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Initialiseer chat sessie
+        async function initializeChat() {
+            try {
+                if (!userId || !userKey || !conversationId) {
+                    // Maak nieuwe gebruiker aan
+                    const userResponse = await fetch('/api/user', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            webhookId: webhookId
+                        })
+                    });
+
+                    if (!userResponse.ok) throw new Error('Fout bij aanmaken gebruiker');
+                    const userData = await userResponse.json();
+                    
+                    // Sla gebruikersgegevens op
+                    userId = userData.user.id;
+                    userKey = userData.key;
+                    localStorage.setItem('userId', userId);
+                    localStorage.setItem('userKey', userKey);
+
+                    // Maak nieuwe conversatie aan
+                    const convResponse = await fetch('/api/conversation', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            userId: userId,
+                            userKey: userKey,
+                            webhookId: webhookId
+                        })
+                    });
+
+                    if (!convResponse.ok) throw new Error('Fout bij aanmaken conversatie');
+                    const convData = await convResponse.json();
+                    
+                    // Sla conversatie ID op
+                    conversationId = convData.id;
+                    localStorage.setItem('conversationId', conversationId);
+                }
+                return true;
+            } catch (error) {
+                console.error('Error initializing chat:', error);
+                addMessage('Er ging iets mis bij het initialiseren van de chat. Vernieuw de pagina om het opnieuw te proberen.');
+                return false;
+            }
+        }
+
+        async function getLatestBotMessage() {
+            let attempts = 0;
+            const maxAttempts = 5;
+            
+            while (attempts < maxAttempts) {
+                try {
+                    console.log('Poging', attempts + 1, 'om berichten op te halen...');
+                    const messagesResponse = await fetch(`/api/messages/${conversationId}`, {
+                        headers: {
+                            'x-user-key': userKey,
+                            'x-webhook-id': webhookId
+                        }
+                    });
+
+                    if (!messagesResponse.ok) throw new Error('Fout bij ophalen berichten');
+                    
+                    const messages = await messagesResponse.json();
+                    
+                    // Sorteer berichten op createdAt, nieuwste eerst
+                    messages.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                    
+                    // Log alle berichten voor debug
+                    console.log('Alle berichten (gesorteerd op tijd):', messages.map(m => ({
+                        id: m.id,
+                        isUser: m.userId === userId,
+                        createdAt: m.createdAt,
+                        text: m.payload?.text || m.payload?.message || 'geen tekst'
+                    })));
+
+                    // Vind het laatste gebruikersbericht
+                    const lastUserMessage = messages.find(m => m.userId === userId);
+                    if (!lastUserMessage) {
+                        console.log('Geen gebruikersberichten gevonden');
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                        attempts++;
+                        continue;
+                    }
+
+                    console.log('Laatste gebruikersbericht:', {
+                        id: lastUserMessage.id,
+                        createdAt: lastUserMessage.createdAt,
+                        text: lastUserMessage.payload?.text || 'geen tekst'
+                    });
+
+                    // Zoek het eerste bot-bericht dat NA het laatste gebruikersbericht komt
+                    const newBotMessage = messages.find(m => 
+                        m.userId !== userId && 
+                        new Date(m.createdAt) > new Date(lastUserMessage.createdAt) &&
+                        m.id !== lastBotMessageId
+                    );
+
+                    if (newBotMessage) {
+                        console.log('Nieuw bot bericht gevonden:', {
+                            id: newBotMessage.id,
+                            createdAt: newBotMessage.createdAt,
+                            text: newBotMessage.payload?.text || newBotMessage.payload?.message || 'geen tekst'
+                        });
+
+                        lastBotMessageId = newBotMessage.id;
+
+                        if (newBotMessage.payload) {
+                            if (typeof newBotMessage.payload === 'string') {
+                                return newBotMessage.payload;
+                            } else if (newBotMessage.payload.text) {
+                                return newBotMessage.payload.text;
+                            } else if (newBotMessage.payload.message) {
+                                return newBotMessage.payload.message;
+                            }
+                        }
+                        return JSON.stringify(newBotMessage.payload);
+                    }
+
+                    console.log('Nog geen nieuw bot bericht gevonden, wacht 2 seconden...');
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                } catch (error) {
+                    console.error('Fout bij ophalen berichten:', error);
+                }
+                attempts++;
+            }
+            
+            throw new Error('Geen antwoord ontvangen van de bot na meerdere pogingen');
         }
 
         async function sendMessage() {
             const message = messageInput.value.trim();
             if (!message) return;
 
-            // UI updaten
+            // Reset lastBotMessageId bij elk nieuw bericht
+            lastBotMessageId = null;
+
+            // Rest van de sendMessage functie blijft hetzelfde
             messageInput.value = '';
             messageInput.style.height = '40px';
             sendButton.disabled = true;
@@ -247,22 +557,40 @@
             showTypingIndicator();
 
             try {
-                const response = await fetch('/chat', {
+                if (!await initializeChat()) {
+                    throw new Error('Chat niet geïnitialiseerd');
+                }
+
+                const messageResponse = await fetch('/api/message', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        message: message,
+                        userId: userId,
+                        userKey: userKey,
+                        conversationId: conversationId,
+                        text: message,
                         webhookId: webhookId
                     })
                 });
 
-                if (!response.ok) throw new Error('Netwerk response was niet ok');
-
-                const data = await response.json();
-                hideTypingIndicator();
-                addMessage(data.response);
+                if (!messageResponse.ok) throw new Error('Fout bij versturen bericht');
+                console.log('Bericht succesvol verzonden, wacht op antwoord...');
+                
+                try {
+                    const botResponse = await getLatestBotMessage();
+                    console.log('Bot antwoord ontvangen:', botResponse);
+                    hideTypingIndicator();
+                    if (botResponse) {
+                        addMessage(botResponse);
+                    } else {
+                        throw new Error('Leeg antwoord ontvangen van de bot');
+                    }
+                } catch (error) {
+                    console.error('Error getting bot response:', error);
+                    throw new Error('Geen antwoord ontvangen van de bot');
+                }
             } catch (error) {
                 console.error('Error:', error);
                 hideTypingIndicator();
@@ -272,6 +600,37 @@
                 messageInput.focus();
             }
         }
+
+        async function resetChat() {
+            // Verwijder chat-gerelateerde data uit localStorage
+            localStorage.removeItem('userId');
+            localStorage.removeItem('userKey');
+            localStorage.removeItem('conversationId');
+            
+            // Reset variabelen
+            userId = null;
+            userKey = null;
+            conversationId = null;
+            lastBotMessageId = null;
+            
+            // Verwijder alle berichten uit de chat
+            while (chatMessages.firstChild) {
+                if (chatMessages.firstChild === typingIndicator) break;
+                chatMessages.removeChild(chatMessages.firstChild);
+            }
+            
+            // Initialiseer nieuwe chat sessie
+            try {
+                await initializeChat();
+                addMessage('Nieuwe chat sessie gestart.');
+            } catch (error) {
+                console.error('Fout bij resetten chat:', error);
+                addMessage('Er ging iets mis bij het resetten van de chat. Vernieuw de pagina om het opnieuw te proberen.');
+            }
+        }
+
+        // Initialiseer chat bij laden
+        window.addEventListener('load', initializeChat);
 
         // Focus op input bij laden
         window.addEventListener('load', () => {
