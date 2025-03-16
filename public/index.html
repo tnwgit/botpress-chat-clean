@@ -115,8 +115,16 @@
             margin-bottom: 10px;
             border-radius: 4px;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        @media (min-width: 640px) {
+            .bot-item {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
         }
 
         .bot-info {
@@ -132,11 +140,19 @@
             font-size: 0.9em;
             color: #6c757d;
             margin-top: 5px;
+            word-break: break-all;
         }
 
         .bot-actions {
             display: flex;
             gap: 10px;
+            width: 100%;
+        }
+
+        @media (min-width: 640px) {
+            .bot-actions {
+                width: auto;
+            }
         }
 
         button {
@@ -146,6 +162,14 @@
             cursor: pointer;
             font-weight: bold;
             transition: background-color 0.2s;
+            flex: 1;
+        }
+
+        @media (min-width: 640px) {
+            button {
+                flex: 0 1 auto;
+                min-width: 120px;
+            }
         }
 
         .start-chat {
