@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Assistent Configuratie</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+        }
+
+        .config-container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .bot-list {
+            margin-top: 20px;
+        }
+
+        .bot-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border: 1px solid #ddd;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+
+        .bot-info {
+            flex-grow: 1;
+        }
+
+        .bot-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .error-message {
+            color: #dc3545;
+            margin-top: 5px;
+            font-size: 0.9em;
+        }
+
+        .success-message {
+            color: #28a745;
+            margin-top: 5px;
+            font-size: 0.9em;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="config-container">
+        <h1>Chat Assistent Configuratie</h1>
+        
+        <form id="botForm">
+            <div class="form-group">
+                <label for="botName">Assistent Naam:</label>
+                <input type="text" id="botName" required>
+            </div>
+            <div class="form-group">
+                <label for="webhookId">Webhook ID:</label>
+                <input type="text" id="webhookId" required>
+                <div id="webhookStatus"></div>
+            </div>
+            <button type="submit" id="submitButton" class="btn btn-primary">Bot Toevoegen</button>
+        </form>
+
+        <div class="bot-list" id="botList">
+            <!-- Bots worden hier dynamisch toegevoegd -->
+        </div>
+    </div>
+
+    <script>
+        // Globale variabelen
+        const botForm = document.getElementById('botForm');
+        const submitButton = document.getElementById('submitButton');
+        const webhookStatus = document.getElementById('webhookStatus');
+        let isTestingWebhook = false;
+
+        // Test de webhook
+        async function testWebhook(webhookId) {
+            try {
+                const response = await fetch('/api/test-webhook', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ webhookId })
+                });
+                
+                const data = await response.json();
+                return data.success;
+            } catch (error) {
+                console.error('Webhook test error:', error);
+                return false;
+            }
+        }
+
+        // Laad opgeslagen bots
+        function loadBots() {
+            const bots = JSON.parse(localStorage.getItem('bots') || '[]');
+            const botList = document.getElementById('botList');
+            botList.innerHTML = '';
+
+            if (bots.length === 0) {
+                botList.innerHTML = '<div class="empty-state">Nog geen bots geconfigureerd</div>';
+                return;
+            }
+
+            bots.forEach((bot, index) => {
+                const botElement = document.createElement('div');
+                botElement.className = 'bot-item';
+                botElement.innerHTML = `
+                    <div class="bot-info">
+                        <h3>${bot.name}</h3>
+                        <p>Webhook ID: ${bot.webhookId}</p>
+                    </div>
+                    <div class="bot-actions">
+                        <button class="btn btn-primary" onclick="startChat(${index})">Start Chat</button>
+                        <button class="btn btn-danger" onclick="deleteBot(${index})">Verwijderen</button>
+                    </div>
+                `;
+                botList.appendChild(botElement);
+            });
+        }
+
+        // Voeg een nieuwe bot toe
+        botForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('botName').value;
+            const webhookId = document.getElementById('webhookId').value;
+
+            // Disable form tijdens het testen
+            submitButton.disabled = true;
+            webhookStatus.innerHTML = '<span class="loading"></span> Webhook testen...';
+
+            // Test de webhook
+            const isValid = await testWebhook(webhookId);
+            
+            if (isValid) {
+                const bots = JSON.parse(localStorage.getItem('bots') || '[]');
+                bots.push({ name, webhookId });
+                localStorage.setItem('bots', JSON.stringify(bots));
+
+                webhookStatus.innerHTML = '<span class="success-message">Webhook succesvol getest!</span>';
+                document.getElementById('botForm').reset();
+                loadBots();
+            } else {
+                webhookStatus.innerHTML = '<span class="error-message">Webhook test mislukt. Controleer de Webhook ID.</span>';
+            }
+
+            submitButton.disabled = false;
+        });
+
+        // Verwijder een bot
+        function deleteBot(index) {
+            if (confirm('Weet je zeker dat je deze bot wilt verwijderen?')) {
+                const bots = JSON.parse(localStorage.getItem('bots') || '[]');
+                bots.splice(index, 1);
+                localStorage.setItem('bots', JSON.stringify(bots));
+                loadBots();
+            }
+        }
+
+        // Start chat met geselecteerde bot
+        function startChat(index) {
+            const bots = JSON.parse(localStorage.getItem('bots') || '[]');
+            const bot = bots[index];
+
+            // Sla de webhook ID en bot naam op in localStorage
+            localStorage.setItem('currentWebhookId', bot.webhookId);
+            localStorage.setItem('currentBotName', bot.name);
+            // Navigeer naar de chat pagina
+            window.location.href = '/';
+        }
+
+        // Laad bots bij het opstarten
+        loadBots();
+    </script>
+</body>
+</html> 

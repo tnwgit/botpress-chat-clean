@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat assistent Configuratie</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #007bff;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .bot-list {
+            margin-bottom: 20px;
+        }
+
+        .bot-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .bot-info {
+            flex-grow: 1;
+        }
+
+        .bot-name {
+            font-weight: bold;
+            color: #212529;
+        }
+
+        .bot-id {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .bot-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+
+        .start-chat {
+            background: #007bff;
+            color: white;
+        }
+
+        .start-chat:hover {
+            background: #0056b3;
+        }
+
+        .remove-bot {
+            background: #dc3545;
+            color: white;
+        }
+
+        .remove-bot:hover {
+            background: #c82333;
+        }
+
+        .add-bot-form {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 4px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #212529;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+
+        .add-bot {
+            background: #28a745;
+            color: white;
+            width: 100%;
+            padding: 10px;
+        }
+
+        .add-bot:hover {
+            background: #218838;
+        }
+
+        .error {
+            color: #dc3545;
+            margin-top: 5px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Chat Assistent Configuratie</h1>
+        
+        <div class="bot-list" id="botList">
+            <!-- Bots worden hier dynamisch toegevoegd -->
+        </div>
+
+        <div class="add-bot-form">
+            <div class="form-group">
+                <label for="botName">Assistent Naam</label>
+                <input type="text" id="botName" placeholder="Voer een naam in voor de bot">
+            </div>
+            <div class="form-group">
+                <label for="webhookId">Webhook ID</label>
+                <input type="text" id="webhookId" placeholder="Voer de webhook ID in">
+            </div>
+            <button class="add-bot" onclick="addBot()">Bot Toevoegen</button>
+        </div>
+    </div>
+
+    <script>
+        // Functie om bots op te halen uit localStorage
+        function getBots() {
+            const bots = localStorage.getItem('bots');
+            return bots ? JSON.parse(bots) : [];
+        }
+
+        // Functie om bots op te slaan in localStorage
+        function saveBots(bots) {
+            localStorage.setItem('bots', JSON.stringify(bots));
+        }
+
+        // Functie om de botlijst bij te werken
+        function updateBotList() {
+            const botList = document.getElementById('botList');
+            const bots = getBots();
+            
+            botList.innerHTML = bots.map((bot, index) => `
+                <div class="bot-item">
+                    <div class="bot-info">
+                        <div class="bot-name">${bot.name}</div>
+                        <div class="bot-id">${bot.webhookId}</div>
+                    </div>
+                    <div class="bot-actions">
+                        <button class="start-chat" onclick="startChat(${index})">Start Chat</button>
+                        <button class="remove-bot" onclick="removeBot(${index})">Verwijder</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Functie om de webhook ID te extraheren uit de URL of pure ID
+        function extractWebhookId(input) {
+            if (!input) return null;
+            // Als het een URL is, haal dan de laatste deel van de URL
+            if (input.includes('webhook.botpress.cloud')) {
+                return input.split('/').pop();
+            }
+            return input;
+        }
+
+        // Functie om een nieuwe bot toe te voegen
+        function addBot() {
+            const nameInput = document.getElementById('botName');
+            const webhookInput = document.getElementById('webhookId');
+            
+            const name = nameInput.value.trim();
+            const rawWebhookId = webhookInput.value.trim();
+            const webhookId = extractWebhookId(rawWebhookId);
+            
+            if (!name || !webhookId) {
+                alert('Vul alle velden in');
+                return;
+            }
+            
+            const bots = getBots();
+            if (bots.some(bot => bot.webhookId === webhookId)) {
+                alert('Deze webhook ID bestaat al');
+                return;
+            }
+            
+            bots.push({ name, webhookId });
+            saveBots(bots);
+            updateBotList();
+            
+            // Reset form
+            nameInput.value = '';
+            webhookInput.value = '';
+        }
+
+        // Functie om een bot te verwijderen
+        function removeBot(index) {
+            const bots = getBots();
+            bots.splice(index, 1);
+            saveBots(bots);
+            updateBotList();
+        }
+
+        // Functie om de chat te starten
+        function startChat(index) {
+            const bots = getBots();
+            const bot = bots[index];
+            
+            // Sla de webhook ID en bot naam op in localStorage
+            localStorage.setItem('currentWebhookId', bot.webhookId);
+            localStorage.setItem('currentBotName', bot.name);
+            // Navigeer naar de chat pagina
+            window.location.href = '/chat.html';
+        }
+
+        // Initialize de botlijst bij het laden van de pagina
+        document.addEventListener('DOMContentLoaded', updateBotList);
+    </script>
+</body>
+</html> 

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Widget</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>Chat</h1>
+        </div>
+        <div id="messages"></div>
+        <div class="typing-indicator">
+            <div class="dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+        <div class="input-container">
+            <input type="text" id="user-input" placeholder="Type een bericht..." autocomplete="off">
+            <button id="send-button">Verstuur</button>
+        </div>
+    </div>
+    <script src="chat.js"></script>
+</body>
+</html> 
