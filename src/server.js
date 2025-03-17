@@ -7,6 +7,21 @@ const app = express();
 app.use(express.json());
 app.use(express.static('public'));
 
+// Helper functie om webhook ID te extraheren
+function extractWebhookId(webhookUrl) {
+    try {
+        // Als het een volledige URL is, haal dan het laatste deel eruit
+        if (webhookUrl.includes('webhook.botpress.cloud/')) {
+            return webhookUrl.split('webhook.botpress.cloud/')[1];
+        }
+        // Anders, gebruik de input als is
+        return webhookUrl;
+    } catch (error) {
+        console.error('Error extracting webhook ID:', error);
+        return webhookUrl;
+    }
+}
+
 // API endpoints
 app.post('/api/user', async (req, res) => {
     try {
@@ -15,7 +30,7 @@ app.post('/api/user', async (req, res) => {
             return res.status(400).json({ error: 'webhookId is verplicht' });
         }
 
-        const cleanWebhookId = webhookId.trim();
+        const cleanWebhookId = extractWebhookId(webhookId.trim());
         console.log('Creating new user with webhook ID:', cleanWebhookId);
 
         const client = new Client({ webhookId: cleanWebhookId });
@@ -46,7 +61,7 @@ app.post('/api/conversation', async (req, res) => {
             return res.status(400).json({ error: 'userId, userKey en webhookId zijn verplicht' });
         }
 
-        const cleanWebhookId = webhookId.trim();
+        const cleanWebhookId = extractWebhookId(webhookId.trim());
         console.log('Creating new conversation for user:', userId);
         
         const client = new Client({ 
@@ -75,7 +90,7 @@ app.post('/api/message', async (req, res) => {
             return res.status(400).json({ error: 'userId, userKey, conversationId, webhookId en text zijn verplicht' });
         }
 
-        const cleanWebhookId = webhookId.trim();
+        const cleanWebhookId = extractWebhookId(webhookId.trim());
         console.log('Sending message:', { userId, conversationId, text, webhookId: cleanWebhookId });
 
         const client = new Client({ 
@@ -111,7 +126,7 @@ app.get('/api/messages/:conversationId', async (req, res) => {
             return res.status(400).json({ error: 'userKey (in headers), webhookId (in headers) en conversationId zijn verplicht' });
         }
 
-        const cleanWebhookId = webhookId.trim();
+        const cleanWebhookId = extractWebhookId(webhookId.trim());
         console.log('Fetching messages for conversation:', conversationId);
 
         const client = new Client({ 
