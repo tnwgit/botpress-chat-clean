@@ -24,12 +24,12 @@
             display: flex;
             flex-direction: column;
             padding: 20px;
+            gap: 20px;
         }
 
         .back-to-admin {
-            position: fixed;
-            top: 20px;
-            left: 20px;
+            position: static;
+            align-self: flex-start;
             background: white;
             border: none;
             padding: 8px 12px;
@@ -42,6 +42,7 @@
             gap: 6px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             transition: all 0.2s;
+            margin-bottom: -10px;
         }
 
         .back-to-admin:hover {
@@ -60,7 +61,8 @@
             margin: 0 auto;
             display: flex;
             flex-direction: column;
-            height: calc(100vh - 40px);
+            height: calc(100vh - 100px);
+            flex-shrink: 0;
         }
 
         .chat-header {
@@ -253,6 +255,24 @@
             transition: background-color 0.2s;
         }
 
+        /* Voeg specifieke stijl toe voor de verzendknop */
+        #sendButton {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 40px; /* Voorkom dat de knop vervormt */
+        }
+
+        #sendButton svg {
+            width: 20px;
+            height: 20px;
+            transform: translateX(1px); /* Kleine aanpassing voor visuele balans */
+        }
+
         button:hover {
             background: #0056b3;
         }
@@ -350,7 +370,12 @@
                 rows="1"
                 onkeydown="if(event.keyCode === 13 && !event.shiftKey) { event.preventDefault(); sendMessage(); }"
             ></textarea>
-            <button onclick="sendMessage()" id="sendButton">Verstuur</button>
+            <button onclick="sendMessage()" id="sendButton">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+            </button>
         </div>
     </div>
 
