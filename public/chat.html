@@ -411,6 +411,12 @@
         async function initializeChat() {
             try {
                 if (!userId || !userKey || !conversationId) {
+                    console.log('Nieuwe chat sessie starten...');
+                    // Reset alle sessie data
+                    localStorage.removeItem('userId');
+                    localStorage.removeItem('userKey');
+                    localStorage.removeItem('conversationId');
+                    
                     // Maak nieuwe gebruiker aan
                     const userResponse = await fetch('/api/user', {
                         method: 'POST',
@@ -422,8 +428,13 @@
                         })
                     });
 
-                    if (!userResponse.ok) throw new Error('Fout bij aanmaken gebruiker');
+                    if (!userResponse.ok) {
+                        console.error('Fout bij aanmaken gebruiker:', await userResponse.text());
+                        throw new Error('Fout bij aanmaken gebruiker');
+                    }
+                    
                     const userData = await userResponse.json();
+                    console.log('Nieuwe gebruiker aangemaakt:', userData);
                     
                     // Sla gebruikersgegevens op
                     userId = userData.user.id;
@@ -444,12 +455,26 @@
                         })
                     });
 
-                    if (!convResponse.ok) throw new Error('Fout bij aanmaken conversatie');
+                    if (!convResponse.ok) {
+                        console.error('Fout bij aanmaken conversatie:', await convResponse.text());
+                        throw new Error('Fout bij aanmaken conversatie');
+                    }
+                    
                     const convData = await convResponse.json();
+                    console.log('Nieuwe conversatie aangemaakt:', convData);
                     
                     // Sla conversatie ID op
                     conversationId = convData.id;
                     localStorage.setItem('conversationId', conversationId);
+                    
+                    // Voeg welkomstbericht toe
+                    addMessage('Chat sessie gestart. Type een bericht om te beginnen.');
+                } else {
+                    console.log('Bestaande chat sessie gevonden:', {
+                        userId,
+                        conversationId,
+                        webhookId
+                    });
                 }
                 return true;
             } catch (error) {
